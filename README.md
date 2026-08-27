@@ -1,566 +1,286 @@
-# 🏭 MLOps Indústria 4.0 — Manutenção Preditiva
+# MLOps e Engenharia de Dados para Manutenção Preditiva
 
-Dashboard desenvolvido para a disciplina **Engenharia de Dados e MLOps**, com foco na aplicação de Machine Learning para **detecção de falhas em equipamentos industriais** em um cenário de dados altamente desbalanceados.
+Projeto desenvolvido para a Unidade Curricular de **Engenharia de Dados e MLOps** (UniSENAI), focado na aplicação de Machine Learning para detecção de falhas operacionais na Indústria 4.0.
 
-O projeto simula dados de sensores industriais com **99,5% de operações normais e 0,5% de falhas**, demonstrando como métricas tradicionais podem ser insuficientes em cenários de falhas raras e como o **ajuste do threshold de decisão baseado em custos financeiros** pode apoiar decisões operacionais.
-
-> **Observação:** os dados utilizados neste projeto são sintéticos e foram gerados exclusivamente para fins acadêmicos e de demonstração do pipeline.
+A solução contempla um pipeline completo que sintetiza dados de sensores industriais, previne *Data Leakage*, treina um modelo de classificação probabilístico, avalia o desempenho estatístico através de múltiplas métricas e executa a otimização do threshold de decisão baseada nos custos operacionais do negócio.
 
 ---
 
-## 📋 Objetivos
+## 1. Escopo da Solução: Componentes Implementados e Propostos
 
-O projeto tem como objetivos:
+Para garantir transparência técnica e alinhar a documentação com o código-fonte existente no repositório, as funcionalidades são divididas em duas categorias:
 
-* Gerar um conjunto de dados sintéticos representando sensores industriais;
-* Simular um cenário altamente desbalanceado de **99,5% de operações normais e 0,5% de falhas**;
-* Construir um pipeline reprodutível de Machine Learning;
-* Evitar **Data Leakage** durante o pré-processamento;
-* Treinar um modelo de **Random Forest** para classificação de falhas;
-* Avaliar o modelo utilizando diferentes métricas de classificação;
-* Analisar a **Matriz de Confusão** e seus componentes TP, TN, FP e FN;
-* Calcular Acurácia, Precisão, Recall, F1, F2, F0.5 e AUC-ROC;
-* Avaliar diferentes thresholds de decisão;
-* Simular custos financeiros associados a falsos positivos e falsos negativos;
-* Identificar o threshold de menor custo operacional;
-* Demonstrar práticas de monitoramento e governança relacionadas a MLOps;
-* Gerar um Relatório Executivo em PDF com os resultados consolidados.
+* **Componentes Efetivamente Implementados:** Código em Python (`.py`) executável para geração sintética de dados, divisão estratificada, padronização sem vazamento, treinamento do modelo, cálculo estatístico de métricas, otimização financeira por threshold, geração de relatório executivo em PDF e interface interativa em Streamlit.
+* **Arquitetura Proposta para Produção (Recomendações MLOps):** Conceitos de governança visualizados na aba de arquitetura do dashboard — tais como monitoramento contínuo de *Data Drift* via KS-Test, gatilhos automáticos de retreinamento (MLflow/Kubeflow), *Feature Store* centralizada e rotinas de *Safe Fallback* — representam diretrizes para uma futura implantação em escala, não estando executáveis neste repositório.
 
 ---
 
-## 📁 Estrutura do Projeto
+## 2. Contexto e Objetivo
 
-```text
-Engenharia-de-Dados-e-MLOps/
-│
-├── app.py                  # Dashboard interativo (Streamlit)
-├── data_generator.py       # Geração de dados sintéticos desbalanceados
-├── preprocessing.py        # Pré-processamento com prevenção de Data Leakage
-├── model.py                # Treinamento do Random Forest
-├── metrics.py              # Métricas de classificação (Acurácia, Precisão, Recall, Fβ, AUC-ROC)
-├── financial_analysis.py   # Análise financeira e ajuste dinâmico do threshold
-├── generate_report.py      # Geração do Relatório Executivo em PDF
-│
-├── requirements.txt        # Dependências do projeto
-├── README.md               # Documentação (este arquivo)
-├── LICENSE                 # Licença
-│
-└── reports/                # Relatório PDF e gráficos gerados
-    ├── relatorio_executivo_mlops.pdf
-    ├── curva_roc.png
-    ├── matrizes_confusao.png
-    └── custo_vs_threshold.png
-```
+Em ambientes industriais, eventos de falha grave são raros em comparação com o tempo de operação normal. Contudo, suas consequências geram paradas não planejadas e custos elevados.
+
+O objetivo deste projeto é construir um pipeline preditivo reprodutível focado no impacto financeiro das decisões do modelo.
+
+Em bases altamente desbalanceadas, a **Acurácia isolada é uma métrica enganosa**: um modelo ingênuo que classifique 100% das amostras como "Operação Normal" obteria ~99,5% de acurácia, mas falharia em identificar todas as falhas reais. Por isso, a avaliação utiliza métricas focadas em sensibilidade, precisão e custos reais de classificação.
 
 ---
 
-## 🏗️ Arquitetura da Solução
+## 3. Telemetria e Amostragem de Dados
 
-O fluxo geral da solução é:
+Os dados são sintetizados via `make_classification` (`scikit-learn`) com semente fixa (`random_state=42`), garantindo reprodutibilidade.
 
-```text
-┌─────────────────────────────┐
-│ Dados Sintéticos             │
-│ Sensores Industriais         │
-│ 99,5% Normal / 0,5% Falha   │
-│ (data_generator.py)          │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│ Train/Test Split             │
-│ 80% Treino / 20% Teste       │
-│ Stratified                   │
-│ (preprocessing.py)           │
-└──────────────┬──────────────┘
-               │
-               ├──────────────────────┐
-               │                      │
-               ▼                      ▼
-       ┌───────────────┐       ┌───────────────┐
-       │ Dados Treino  │       │ Dados Teste   │
-       └───────┬───────┘       └───────────────┘
-               │
-               ▼
-       ┌───────────────┐
-       │ Pré-process.  │
-       │ StandardScaler│
-       │ (fit no treino)│
-       └───────┬───────┘
-               │
-               ▼
-       ┌───────────────┐
-       │ Random Forest │
-       │ Classifier    │
-       │ (model.py)    │
-       └───────┬───────┘
-               │
-               ▼
-       ┌───────────────┐
-       │ Probabilidade │
-       │ de Falha      │
-       └───────┬───────┘
-               │
-               ▼
-       ┌───────────────┐
-       │ Métricas      │
-       │ (metrics.py)  │
-       └───────┬───────┘
-               │
-               ▼
-       ┌──────────────────────┐
-       │ Análise Financeira   │
-       │ Ajuste de Threshold  │
-       │(financial_analysis.py)│
-       └──────────┬───────────┘
-                  │
-                  ▼
-       ┌──────────────────────┐
-       │ Relatório PDF        │
-       │ (generate_report.py) │
-       └──────────────────────┘
-```
+* **Proporção das Classes:** Fixada intencionalmente em **99,5% de Operação Normal (`target=0`)** e **0,5% de Eventos de Falha (`target=1`)** (`weights=[0.995, 0.005]`, `flip_y=0`).
+* **Variação do Volume de Amostras:** O número total de registros pode ser alterado na aplicação (5.000, 10.000, 20.000 ou 50.000). A proporção relativa de falhas permanece em ~0,5%, mas a **quantidade absoluta** de falhas varia conforme o tamanho da base:
+* 5.000 amostras $\approx$ 25 eventos de falha
+* 20.000 amostras $\approx$ 100 eventos de falha
+* 50.000 amostras $\approx$ 250 eventos de falha
+
+
+* **Variáveis de Entrada (10 atributos contínuos):**
+* `sensor_vibracao_eixo_x`, `sensor_vibracao_eixo_y`, `sensor_vibracao_eixo_z`
+* `temp_motor_principal`, `pressao_hidraulica`, `torque_braco_robotico`
+* `rpm_esteira`, `consumo_corrente_motor`, `ruido_acustico_db`, `fluxo_lubrificante`
+
+
 
 ---
 
-## 🔒 Prevenção de Data Leakage
+## 4. Pipeline de Dados e Prevenção de Data Leakage
 
-Uma das principais preocupações do pipeline é impedir que informações do conjunto de teste influenciem o treinamento ou o pré-processamento do modelo.
+A prevenção de *Data Leakage* (vazamento de dados) foi estruturada no arquivo `preprocessing.py`.
 
-O conjunto de dados é inicialmente dividido em:
+```text
+               [ Dataset Sintético Completo ]
+                             │
+                             ▼
+              [ Train/Test Split (80/20) ]
+              (Estratificado por Classe)
+                             │
+            ┌────────────────┴────────────────┐
+            ▼                                 ▼
+   [ Conjunto de Treino ]           [ Conjunto de Teste ]
+   (80% das Amostras)               (20% das Amostras)
+            │                                 │
+            ▼                                 │
+[ Fit + Transform: StandardScaler ]           │
+            │                                 │
+            ▼                                 ▼
+ [ Treinamento do Modelo ]        [ Transform: StandardScaler ]
+ (RandomForestClassifier)         (Apenas parâmetros do Treino)
+            │                                 │
+            └────────────────┬────────────────┘
+                             │
+                             ▼
+                 [ Avaliação Final de Teste ]
 
-* **80% para treinamento**;
-* **20% para teste**.
-
-Somente depois dessa divisão o `StandardScaler` é aplicado.
-
-O scaler é ajustado exclusivamente utilizando os dados de treinamento:
-
-```python
-scaler.fit_transform(X_train)
 ```
 
-Enquanto os dados de teste são apenas transformados utilizando os parâmetros aprendidos no treinamento:
+### Fluxo de Execução
 
-```python
-scaler.transform(X_test)
-```
-
-Dessa forma, informações estatísticas do conjunto de teste não são utilizadas durante o treinamento.
+1. **Divisão Estratificada Prévia:** Os dados brutos são divididos em 80% treino e 20% teste antes de qualquer transformação estatística.
+2. **Ajuste Isolado do Scaler:** O `StandardScaler` executa o método `.fit_transform()` **apenas** no conjunto de treinamento para aprender a média ($\mu$) e o desvio padrão ($\sigma$).
+3. **Transformação sem Vazamento:** O conjunto de teste é transformado via `.transform()` utilizando exclusivamente os parâmetros extraídos do treino.
+4. **Isolamento de Avaliação:** O modelo é treinado estritamente com os dados de treino escalados. O conjunto de teste permanece oculto e é utilizado ao final apenas para geração das probabilidades e cálculo das métricas.
 
 ---
 
-## 🤖 Modelo de Machine Learning
+## 5. Algoritmo de Machine Learning
 
-O modelo utilizado é um:
+O modelo adotado no módulo `model.py` é o `RandomForestClassifier`.
 
-**Random Forest Classifier**
+### Justificativa da Escolha
 
-Configuração principal:
+Em vez de justificativas genéricas, a escolha do Random Forest se baseia nos requisitos específicos do projeto:
 
-```python
-RandomForestClassifier(
-    n_estimators=200,
-    class_weight="balanced",
-    random_state=42,
-    n_jobs=-1
-)
-```
-
-O parâmetro:
-
-```python
-class_weight="balanced"
-```
-
-é utilizado devido ao forte desbalanceamento entre as classes.
-
-A classe representa:
-
-```text
-0 → Operação normal
-1 → Falha
-```
+* **Relações Não-Lineares:** Capacidade intrínseca de mapear interações complexas entre múltiplos sensores industriais contínuos sem premissas de linearidade.
+* **Tratamento de Desbalanceamento:** Suporte nativo ao parâmetro `class_weight="balanced"`, que ajusta os pesos das árvores de decisão de forma inversamente proporcional à frequência das classes.
+* **Saída Probabilística:** Permite a extração de probabilidades estimadas via predict_proba(X_test)[:, 1], requisito fundamental para a análise e ajuste do threshold de decisão.
 
 ---
 
-## 📊 Dados Sintéticos
+## 6. Framework de Avaliação Estatística
 
-Os dados são gerados utilizando `make_classification` do Scikit-Learn.
+O cálculo das métricas é realizado em `metrics.py` e dividido entre métricas dependentes de threshold e métricas independentes.
 
-São simuladas 10 variáveis relacionadas a sensores industriais:
+### 6.1 Métricas Dependentes de Threshold
 
-| Variável                 | Representação            |
-| ------------------------ | ------------------------ |
-| `sensor_vibracao_eixo_x` | Vibração no eixo X       |
-| `sensor_vibracao_eixo_y` | Vibração no eixo Y       |
-| `sensor_vibracao_eixo_z` | Vibração no eixo Z       |
-| `temp_motor_principal`   | Temperatura do motor     |
-| `pressao_hidraulica`     | Pressão hidráulica       |
-| `torque_braco_robotico`  | Torque do braço robótico |
-| `rpm_esteira`            | Rotação da esteira       |
-| `consumo_corrente_motor` | Consumo de corrente      |
-| `ruido_acustico_db`      | Ruído acústico           |
-| `fluxo_lubrificante`     | Fluxo de lubrificante    |
+Para um limiar específico (ex: $0,50$), geram-se as previsões binárias e calcula-se a Matriz de Confusão:
 
-A distribuição das classes utilizada na simulação é:
+* **Verdadeiro Positivo (TP):** Falha real identificada corretamente.
+* **Verdadeiro Negativo (TN):** Operação normal identificada corretamente.
+* **Falso Positivo (FP):** Alarme falso (operação normal classificada como falha).
+* **Falso Negativo (FN):** Falha não detectada pelo modelo (quebra não prevista).
 
-```text
-99,5% → Operação normal
- 0,5% → Falha
-```
+Métricas derivadas:
 
-O `random_state=42` garante a reprodutibilidade da geração dos dados.
+* **Acurácia:** Proporção total de acertos.
+* **Precisão:** Taxa de acerto quando o modelo dispara um alarme de falha.
+* **Recall (Sensibilidade):** Proporção de falhas reais que o modelo conseguiu capturar.
+* **Métricas da Família $F_\beta$:**
+* **$F_1$-Score ($\beta=1.0$):** Média harmônica balanceada entre Precisão e Recall.
+* **$F_2$-Score ($\beta=2.0$):** Atribui maior peso ao Recall, sendo especialmente adequado para cenários em que a detecção de falhas reais é prioritária.
+* **$F_{0.5}$-Score ($\beta=0.5$):** Atribui maior peso à **Precisão**, sendo indicada para cenários onde a redução de alarmes falsos é prioritária.
 
----
 
-## 📐 Métricas de Avaliação
 
-Devido ao forte desbalanceamento das classes, o projeto não utiliza apenas Acurácia.
+### 6.2 Métrica Independente de Threshold (AUC-ROC)
 
-São avaliadas as seguintes métricas:
-
-### Acurácia
-
-Representa a proporção total de classificações corretas.
-
-```text
-Acurácia = (TP + TN) / (TP + TN + FP + FN)
-```
-
-Em datasets altamente desbalanceados, uma Acurácia elevada pode ser enganosa.
-
-### Precisão
-
-Mede a proporção das previsões positivas que realmente representam falhas.
-
-```text
-Precisão = TP / (TP + FP)
-```
-
-### Recall
-
-Mede a capacidade do modelo de identificar as falhas existentes.
-
-```text
-Recall = TP / (TP + FN)
-```
-
-Em manutenção preditiva, essa métrica é especialmente relevante porque falsos negativos podem representar falhas não identificadas.
-
-### F1-Score
-
-Equilibra Precisão e Recall.
-
-```text
-F1 = 2 × (Precisão × Recall) / (Precisão + Recall)
-```
-
-### F2-Score
-
-Dá maior peso ao Recall.
-
-É útil em cenários nos quais deixar uma falha passar é mais prejudicial do que gerar um alerta adicional.
-
-### F0.5-Score
-
-Dá maior peso à Precisão.
-
-Pode ser utilizado para avaliar cenários nos quais falsos alarmes também representam um custo relevante.
-
-### AUC-ROC
-
-A AUC-ROC mede a capacidade do modelo de separar as classes considerando diferentes thresholds de decisão.
+A função `evaluate_metrics()` retorna as métricas operacionais para um corte fixo. A área sob a curva (*AUC-ROC*) é calculada de forma independente diretamente sobre o vetor de probabilidades `y_probs_test` e os rótulos reais `y_test`. Isso avalia a capacidade geral do algoritmo em discriminar as classes em qualquer nível de sensibilidade.
 
 ---
 
-## 🎯 Ajuste de Threshold
+## 7. Análise Financeira e Redução de Custos
 
-O modelo gera uma probabilidade de falha para cada amostra.
+A análise financeira (módulo `financial_analysis.py`) substitui estimativas genéricas de ROI por um modelo direto de **Custo Total por Erros de Classificação**.
 
-Por padrão, utiliza-se:
+### 7.1 Modelo de Custo Operacional
 
-```text
-Threshold = 0,50
-```
+$$\text{Custo Total} = (FP \times \text{Custo}_{FP}) + (FN \times \text{Custo}_{FN})$$
 
-Porém, o projeto testa thresholds entre:
+Premissas padrão configuráveis:
 
-```text
-0,05 e 0,95
-```
+* **Custo do Falso Negativo ($FN$): R$ 50.000,00** (Danos ao equipamento, parada não planejada da linha e perda de produção).
+* **Custo do Falso Positivo ($FP$): R$ 500,00** (Inspeção técnica preventiva e checagem breve de rotina).
 
-em intervalos de 0,01.
+### 7.2 Otimização do Threshold
 
-Para cada threshold são calculados:
+O algoritmo avalia o Custo Total em uma faixa de thresholds entre $0,05$ e $0,95$ (passo $0,01$). O threshold ótimo é aquele que minimiza o Custo Total da operação.
 
-* TP;
-* TN;
-* FP;
-* FN;
-* Acurácia;
-* Precisão;
-* Recall;
-* F1;
-* F2;
-* F0.5;
-* Custo Total.
+$$\text{Economia Absoluta (R\$)} = \text{Custo Total}_{\text{Threshold 0.50}} - \text{Custo Total}_{\text{Threshold Ótimo}}$$
 
-O threshold escolhido é aquele que apresenta o **menor custo financeiro total** dentro dos thresholds avaliados.
+$$\text{Economia Percentual (\%)} = \left( \frac{\text{Economia Absoluta}}{\text{Custo Total}_{\text{Threshold 0.50}}} \right) \times 100$$
 
 ---
 
-## 💰 Modelo Financeiro
-
-O projeto considera que diferentes tipos de erro possuem diferentes impactos financeiros.
-
-### Falso Negativo
-
-Um falso negativo ocorre quando:
+## 8. Arquitetura de Código e Responsabilidades
 
 ```text
-Falha real → Modelo classifica como normal
+.
+├── reports/                # Armazenamento dos relatórios em PDF gerados
+├── app.py                  # Interface interativa em Streamlit (Módulo Complementar)
+├── data_generator.py       # Geração de dados sintéticos de sensores industriais com proporção de 0,5% de falhas.
+├── preprocessing.py        # Divisão estratificada e ajuste do StandardScaler
+├── model.py                # Instanciação e treinamento do RandomForestClassifier
+├── metrics.py              # Funções de cálculo de métricas estatísticas e AUC-ROC
+├── financial_analysis.py   # Varredura de thresholds e minimização do custo operacional
+├── generate_report.py      # Script de compilação do relatório executivo em PDF (ReportLab)
+├── requirements.txt        # Lista de dependências do projeto
+└── README.md               # Documentação técnica
+
 ```
 
-Esse cenário representa uma falha não detectada e possui um custo maior.
-
-### Falso Positivo
-
-Um falso positivo ocorre quando:
-
-```text
-Operação normal → Modelo classifica como falha
-```
-
-Esse cenário pode representar uma inspeção ou parada preventiva desnecessária.
-
-### Custo Total
-
-O custo é calculado por:
-
-```text
-Custo Total =
-(FP × Custo do Falso Positivo)
-+
-(FN × Custo do Falso Negativo)
-```
-
-Os custos podem ser configurados diretamente no painel lateral do dashboard.
-
-O sistema então compara o custo obtido pelo threshold padrão `0,50` com o threshold de menor custo.
+| Arquivo | Responsabilidade Técnica |
+| --- | --- |
+| `data_generator.py` | Gera o dataset sintético controlando o volume e a proporção de $0,5\%$ de falhas. |
+| `preprocessing.py` | Executa o *split* estratificado e o escalamento sem vazamento de dados. |
+| `model.py` | Treina o Random Forest aplicando pesos balanceados para a classe minoritária. |
+| `metrics.py` | Calcula métricas baseadas em matriz de confusão e calcula a curva ROC / AUC-ROC. |
+| `financial_analysis.py` | Simula os custos operacionais por threshold e identifica o ponto de menor custo. |
+| `generate_report.py` | Gera o relatório executivo em PDF no diretório `reports/`. |
+| `app.py` | Interface gráfica complementar em Streamlit para exploração visual e interativa. |
 
 ---
 
-## 📈 Dashboard
+## 9. Interfaces de Saída: Dashboard e Relatório PDF
 
-O dashboard desenvolvido em Streamlit possui quatro áreas principais:
+### 9.1 Dashboard Interativo em Streamlit (`app.py`)
 
-### 💰 Análise Financeira
+Desenvolvido como **interface complementar** para facilitar a exploração dos resultados:
 
-Apresenta:
+* **Aba 1 (Análise Financeira):** Gráficos interativos da curva de custo por threshold e simulação de custos $FN$/$FP$ em tempo real.
+* **Aba 2 (Diagnósticos):** Curva ROC, matrizes de confusão comparativas e tabela completa com métricas $F_\beta$.
+* **Aba 3 (Telemetria):** Visualização dos dados brutos e exportação tratada para Excel.
+* **Aba 4 (Arquitetura MLOps):** Apresentação visual das diretrizes propostas para produção.
 
-* Custo no threshold 0,50;
-* Custo no threshold ótimo;
-* Economia gerada;
-* Gráfico de custo versus threshold;
-* Download dos resultados da análise.
+### 9.2 Relatório Executivo em PDF (`generate_report.py`)
 
-### 📈 Diagnósticos e Curva ROC
-
-Apresenta:
-
-* Curva ROC;
-* AUC-ROC;
-* Matrizes de confusão;
-* Comparação entre threshold padrão e threshold ótimo;
-* TP, TN, FP e FN;
-* Quadro comparativo das métricas.
-
-### 📊 Exploração dos Dados
-
-Apresenta:
-
-* Amostras dos dados sintéticos;
-* Quantidade total de amostras;
-* Quantidade de amostras normais;
-* Quantidade de falhas;
-* Download do dataset.
-
-### 🛠️ Arquitetura MLOps
-
-Apresenta recomendações para utilização do modelo em produção, incluindo:
-
-* Monitoramento de Data Drift;
-* Testes estatísticos;
-* Estratégia de retreinamento;
-* Feature Store e governança;
-* Protocolo de fallback.
+Script autônomo que gera um arquivo PDF profissional em `reports/relatorio_executivo.pdf` utilizando a biblioteca `ReportLab`. O documento consolida gráficos, tabelas e pareceres operacionais para tomada de decisão.
 
 ---
 
-## 📄 Relatório Executivo em PDF
+## 10. Instruções de Instalação e Execução
 
-O relatório executivo pode ser gerado automaticamente pelo script `generate_report.py` e contém:
+### 10.1 Pré-requisitos
 
-* **Arquitetura da Solução**: Explicação do pipeline e como o isolamento de dados preveniu o Data Leakage.
-* **Quadro Comparativo de Métricas**: Tabela com Acurácia, Matriz de Confusão, Precisão, Recall, F1, F2, F0.5 e AUC-ROC.
-* **Curva AUC-ROC**: Gráfico da capacidade discriminativa do modelo.
-* **Matrizes de Confusão**: Comparativo visual entre threshold padrão e ótimo.
-* **Análise Financeira do Threshold**: Gráfico do Custo Total vs. Threshold de Decisão, com destaque para o ponto de menor custo e economia em R$.
-* **Recomendações MLOps**: Plano de monitoramento, retreinamento, governança e fallback.
+* Python 3.10 ou superior
+* Gerenciador de pacotes `pip`
 
-Para gerar o relatório:
+### 10.2 Configuração do Ambiente
 
 ```bash
-python generate_report.py
-```
-
-O PDF será salvo em `reports/relatorio_executivo_mlops.pdf`.
-
----
-
-## 🛡️ Recomendações MLOps
-
-Para uma aplicação real em ambiente industrial, recomenda-se:
-
-### 1. Monitoramento de Data Drift
-
-Monitorar alterações na distribuição das variáveis de entrada, como:
-
-* vibração;
-* temperatura;
-* pressão;
-* corrente;
-* ruído.
-
-Testes estatísticos, como Kolmogorov-Smirnov, podem ser utilizados para identificar mudanças relevantes.
-
-### 2. Retreinamento
-
-O modelo pode ser retreinado periodicamente ou quando indicadores de desempenho apresentarem degradação.
-
-Uma possível regra de negócio é utilizar o F2-Score como indicador de acompanhamento devido à importância do Recall no cenário de manutenção preditiva.
-
-### 3. Governança
-
-As transformações utilizadas no treinamento e na inferência devem ser mantidas de forma consistente, garantindo que o modelo receba as mesmas características durante produção e treinamento.
-
-### 4. Fallback
-
-Em caso de indisponibilidade do modelo ou problemas nos sensores, deve existir um procedimento operacional de segurança para evitar que uma falha de infraestrutura de Machine Learning comprometa a operação industrial.
-
----
-
-## ⚙️ Instalação
-
-### 1. Clonar o repositório
-
-```bash
+# 1. Clonar o repositório
 git clone <URL_DO_REPOSITORIO>
 cd <NOME_DO_REPOSITORIO>
-```
 
-### 2. Criar ambiente virtual
-
-No Windows:
-
-```bash
+# 2. Criar ambiente virtual
 python -m venv .venv
-```
 
-### 3. Ativar o ambiente virtual
-
-PowerShell:
-
-```powershell
+# 3. Ativar o ambiente virtual
+# Windows (PowerShell):
 .venv\Scripts\Activate.ps1
-```
+# Linux/macOS:
+source .venv/bin/activate
 
-Caso esteja utilizando o Prompt de Comando:
-
-```cmd
-.venv\Scripts\activate
-```
-
-### 4. Instalar as dependências
-
-```bash
+# 4. Instalar as dependências
 pip install -r requirements.txt
+
 ```
 
----
+### 10.3 Executando os Scripts
 
-## ▶️ Execução
-
-### Dashboard Interativo
-
-Com o ambiente virtual ativado, execute:
-
-```bash
-streamlit run app.py
-```
-
-O Streamlit iniciará o dashboard localmente.
-
-### Geração do Relatório PDF
-
+* **Gerar o Relatório Executivo em PDF:**
 ```bash
 python generate_report.py
+
 ```
 
-O relatório será salvo na pasta `reports/`.
+
+*(O arquivo será gerado na pasta `reports/`)*
+* **Iniciar o Dashboard Complementar em Streamlit:**
+```bash
+streamlit run app.py
+
+```
+
+
 
 ---
 
-## 🔁 Reprodutibilidade
+## 11. Formatação na Exportação de Dados (CSV)
 
-O projeto utiliza `random_state=42` na geração dos dados e no particionamento entre treino e teste.
+Os arquivos gerados para download na interface utilizam o padrão compatível com planilhas regionalizadas (Excel em português):
 
-Isso permite reproduzir o mesmo cenário experimental quando executado sob as mesmas condições e versões das dependências.
-
----
-
-## 📚 Tecnologias Utilizadas
-
-* **Python**
-* **Streamlit**
-* **NumPy**
-* **Pandas**
-* **Matplotlib**
-* **Scikit-Learn**
-* **FPDF2** (geração de PDF)
-* **Git**
-* **VSCode**
+* **Separador de Colunas:** Ponto e vírgula (`;`)
+* **Separador Decimal:** Vírgula (`,`)
+* **Encoding:** UTF-8 com BOM (`utf-8-sig`)
 
 ---
 
-## 🎓 Contexto Acadêmico
+## 12. Arquitetura MLOps Proposta para Produção (Recomendações)
 
-Projeto desenvolvido para a Unidade Curricular:
+As diretrizes abaixo não representam scripts executáveis no código atual, mas constituem a visão de arquitetura para a implantação do modelo em ambiente produtivo:
 
-**Engenharia de Dados e MLOps**
-
-**Professor:** Prof. MSc. Hugo Menezes Barra
-
-**Tema:** Machine Learning aplicado à detecção de falhas em sensores industriais e otimização do threshold de decisão considerando impactos financeiros.
-
----
-
-## ⚠️ Limitações
-
-Este projeto utiliza dados sintéticos para simulação acadêmica.
-
-Consequentemente, os nomes das variáveis representam sensores industriais hipotéticos e não correspondem necessariamente a medições físicas reais.
-
-Para utilização em ambiente industrial real seriam necessários:
-
-* dados históricos reais;
-* definição operacional de falha;
-* validação com especialistas;
-* calibração dos custos;
-* monitoramento em produção;
-* validação temporal;
-* infraestrutura de inferência;
-* governança e versionamento dos modelos.
+1. **Monitoramento de Data Drift:** Aplicação de testes estatísticos contínuos (como *Kolmogorov-Smirnov*) na telemetria dos sensores para detectar desvios de distribuição causados pelo desgaste mecânico dos ativos.
+2. **Pipelines de Retreinamento:** Configuração de acionamentos automáticos no Orchestrator (Kubeflow/Airflow) caso a métrica $F_2$-Score caia abaixo de $0,80$ em ambiente de produção.
+3. **Feature Store e Servibilidade:** Centralização dos parâmetros de transformação (`StandardScaler`) em uma *Feature Store* para garantir paridade exata entre o treinamento offline e a inferência de baixa latência (*Edge Computing*).
+4. **Mecanismo de Safe Fallback:** Protocolo operacional para colocar a máquina em modo preventivo se o modelo indicar incerteza elevada ou se houver perda de sinal na coleta dos sensores.
 
 ---
+
+## 13. Matriz de Atendimento aos Requisitos
+
+| Requisito do Trabalho | Estado da Implementação | Detalhes do Atendimento |
+| --- | --- | --- |
+| **Ambiente de Engenharia de Dados e MLOps** | **Implementado** | Estrutura modular em Python, ambiente virtual, gerenciamento de dependências e separação das etapas do pipeline. |
+| **Geração de Dados Sintéticos** | **Implementado** | Simulador de telemetria com proporção ajustada para $0,5\%$ de falhas. |
+| **Isolamento e Sem Data Leakage** | **Implementado** | *Split* estratificado executado antes do `.fit()` do `StandardScaler`. |
+| **Modelo Preditivo Probabilístico** | **Implementado** | `RandomForestClassifier` com pesagem `class_weight="balanced"`. |
+| **Cálculo de Múltiplas Métricas** | **Implementado** | Acurácia, Precisão, Recall, $F_1$, $F_2$ e $F_{0.5}$ em `metrics.py`. |
+| **Curva ROC e AUC-ROC** | **Implementado** | Avaliação calculada de forma independente através das probabilidades. |
+| **Análise de Custos e Threshold** | **Implementado** | Minimização do Custo Total ($FN$ vs $FP$) e cálculo de economia. |
+| **Relatório Executivo em PDF** | **Implementado** | Gerador automático funcional via `generate_report.py` em `reports/`. |
+| **Exportação Compatível Excel** | **Implementado** | Exportação tratada com `;`, `,` e codificação UTF-8-BOM. |
+| **Interface Visual (Streamlit)** | **Implementado** | Desenvolvido como ferramenta complementar interativa. |
+| **Monitoramento de Drift (KS-Test)** | **Proposto** | Diretriz descrita na seção MLOps e no dashboard. |
+| **Retreinamento Automatizado** | **Proposto** | Arquitetura MLOps recomendada para integração com MLflow/Kubeflow. |
+| **Feature Store & Safe Fallback** | **Proposto** | Recomendação estrutural para mitigação de riscos operacionais. |
