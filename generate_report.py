@@ -43,10 +43,10 @@ class ReportPDF(FPDF):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_font("Arial", "", os.path.join(self.FONTS_DIR, "arial.ttf"), uni=True)
-        self.add_font("Arial", "B", os.path.join(self.FONTS_DIR, "arialbd.ttf"), uni=True)
-        self.add_font("Arial", "I", os.path.join(self.FONTS_DIR, "ariali.ttf"), uni=True)
-        self.add_font("Arial", "BI", os.path.join(self.FONTS_DIR, "arialbi.ttf"), uni=True)
+        self.add_font("Arial", "", os.path.join(self.FONTS_DIR, "arial.ttf"))
+        self.add_font("Arial", "B", os.path.join(self.FONTS_DIR, "arialbd.ttf"))
+        self.add_font("Arial", "I", os.path.join(self.FONTS_DIR, "ariali.ttf"))
+        self.add_font("Arial", "BI", os.path.join(self.FONTS_DIR, "arialbi.ttf"))
 
     def header(self):
         self.set_font("Arial", "B", 9)
@@ -235,28 +235,28 @@ def generate_report():
 
     pdf.add_page()
     pdf.ln(40)
-    pdf.set_font("Helvetica", "B", 26)
+    pdf.set_font("Arial", "B", 26)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 14, "Relatório Executivo", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.set_font("Helvetica", "", 16)
+    pdf.set_font("Arial", "", 16)
     pdf.set_text_color(37, 99, 235)
-    pdf.cell(0, 10, "MLOps & Manutenção Preditiva — Indústria 4.0", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 10, "MLOps & Manutenção Preditiva - Indústria 4.0", align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(6)
     pdf.set_draw_color(37, 99, 235)
     pdf.set_line_width(0.8)
     pdf.line(60, pdf.get_y(), pdf.w - 60, pdf.get_y())
     pdf.ln(10)
-    pdf.set_font("Helvetica", "", 11)
+    pdf.set_font("Arial", "", 11)
     pdf.set_text_color(71, 85, 105)
     pdf.cell(0, 7, "Engenharia de Dados e MLOps", align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.cell(0, 7, f"Dados Sintéticos: {N_SAMPLES:,} amostras (99,5% Normal / 0,5% Falha)", align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.cell(0, 7, f"Gerado em: {datetime.datetime.now().strftime('%d/%m/%Y às %H:%M')}", align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(20)
-    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_font("Arial", "B", 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, "Destaques", align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)
-    pdf.set_font("Helvetica", "", 10)
+    pdf.set_font("Arial", "", 10)
     pdf.set_text_color(51, 65, 85)
     highlights = [
         f"AUC-ROC do Modelo: {auc:.4f}",
@@ -327,7 +327,7 @@ def generate_report():
     col_widths = [55, 45, 45, 45]
     total_w = sum(col_widths)
     x_start = (pdf.w - total_w) / 2
-    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_font("Arial", "B", 9)
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.set_x(x_start)
@@ -346,7 +346,7 @@ def generate_report():
         ("AUC-ROC", auc, auc),
     ]
 
-    pdf.set_font("Helvetica", "", 9)
+    pdf.set_font("Arial", "", 9)
     for i, (name, val_def, val_opt) in enumerate(rows):
         fill = i % 2 == 0
         if fill:
@@ -364,7 +364,7 @@ def generate_report():
     pdf.set_fill_color(254, 242, 242)
     pdf.set_text_color(51, 65, 85)
     pdf.set_x(x_start)
-    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_font("Arial", "B", 9)
     pdf.cell(col_widths[0], 7, "  Custo Total (R$)", border=1, fill=True)
     pdf.cell(col_widths[1], 7, f"R$ {default_row['Custo_Total']:,.0f}", border=1, align="C", fill=True)
     pdf.cell(col_widths[2], 7, f"R$ {best_row['Custo_Total']:,.0f}", border=1, align="C", fill=True)
@@ -373,11 +373,11 @@ def generate_report():
     pdf.ln(6)
     pdf.set_text_color(51, 65, 85)
     pdf.section_title("2.1 Matriz de Confusão Detalhada")
-    pdf.set_font("Helvetica", "", 9)
+    pdf.set_font("Arial", "", 9)
     cm_col_widths = [40, 30, 30, 10, 30, 30]
     cm_total_w = sum(cm_col_widths)
     cm_x_start = (pdf.w - cm_total_w) / 2
-    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_font("Arial", "B", 9)
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.set_x(cm_x_start)
@@ -389,13 +389,13 @@ def generate_report():
     pdf.cell(cm_col_widths[5], 7, "TP", border=1, align="C", fill=True)
     pdf.ln()
 
-    pdf.set_font("Helvetica", "", 9)
+    pdf.set_font("Arial", "", 9)
     pdf.set_text_color(51, 65, 85)
     for label, row_data in [("Threshold 0.50", metrics_default), (f"Threshold {best_row['Threshold']:.2f}", metrics_opt)]:
         pdf.set_x(cm_x_start)
-        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_font("Arial", "B", 9)
         pdf.cell(cm_col_widths[0], 7, f"  {label}", border=1)
-        pdf.set_font("Helvetica", "", 9)
+        pdf.set_font("Arial", "", 9)
         pdf.cell(cm_col_widths[1], 7, str(row_data["TN"]), border=1, align="C")
         pdf.cell(cm_col_widths[2], 7, str(row_data["FP"]), border=1, align="C")
         pdf.cell(cm_col_widths[3], 7, "", border=0)

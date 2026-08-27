@@ -163,7 +163,7 @@ $$\text{Economia Percentual (\%)} = \left( \frac{\text{Economia Absoluta}}{\text
 ├── model.py                # Instanciação e treinamento do RandomForestClassifier
 ├── metrics.py              # Funções de cálculo de métricas estatísticas e AUC-ROC
 ├── financial_analysis.py   # Varredura de thresholds e minimização do custo operacional
-├── generate_report.py      # Script de compilação do relatório executivo em PDF (ReportLab)
+├── generate_report.py      # Script de compilação do relatório executivo em PDF (fpdf2)
 ├── requirements.txt        # Lista de dependências do projeto
 └── README.md               # Documentação técnica
 
@@ -194,7 +194,7 @@ Desenvolvido como **interface complementar** para facilitar a exploração dos r
 
 ### 9.2 Relatório Executivo em PDF (`generate_report.py`)
 
-Script autônomo que gera um arquivo PDF profissional em `reports/relatorio_executivo.pdf` utilizando a biblioteca `ReportLab`. O documento consolida gráficos, tabelas e pareceres operacionais para tomada de decisão.
+Script autônomo que gera um arquivo PDF profissional em `reports/relatorio_executivo_mlops.pdf` utilizando a biblioteca `fpdf2`. O documento consolida gráficos, tabelas e pareceres operacionais para tomada de decisão.
 
 ---
 
